@@ -2,18 +2,59 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>Hello World!</title>
+    <title>Truth</title>
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/font-awesome.min.css">
+    <link rel="stylesheet" href="./css/app.css">
+    <!-- <script src="webcam.js"></script> -->
+    <script src="app.js"></script>
+    <script>var $ = jQuery = require("jquery")</script>
   </head>
   <body>
-    <h1>Hello World!</h1>
-    <!-- All of the Node.js APIs are available in this renderer process. -->
-    We are using node <script>document.write(process.versions.node)</script>,
-    Chromium <script>document.write(process.versions.chrome)</script>,
-    and Electron <script>document.write(process.versions.electron)</script>.
+    <div id="wrapper">
+      <div id="side-nav">
+        <ul style="list-style:none" id="nav">
+          <li id="yourName" style="text-transform: none; font-size: 2rem;margin-bottom: 10px;"><i class="fa fa-meh-o"></i> </li>
+          <li>Groups<span class="makeGroup"><a id="create_group" href="#"><i class="fa fa-plus-circle"></i></a></span></li>
+        </ul>
+      </div>
+
+      <div id="main">
+
+      </div>
+    </div>
+
   </body>
 
   <script>
-    // You can also require other files to run in this process
-    require('./renderer.js')
+    var truthApp = require("./lib/app");
+    truthApp.on("rendered", function(rendered) {
+      $("#main").html(rendered)
+    });
+    var showContent = function(view, data) {
+      if (data) {
+        truthApp.group_id = parseInt(data);
+        if (truthApp.unread[truthApp.group_id] > 0) {
+          $("#" + truthApp.group_id).remove();
+          truthApp.totalUnread -= truthApp.unread[truthApp.group_id];
+          app.setBadgeCount(truthApp.totalUnread);
+          truthApp.unread[truthApp.group_id] = 0;
+
+        }
+      }
+      truthApp.emit("view-selected", view);
+    }
+    $(function() {
+      showContent("home");
+      $("#nav a").on("click", function(e) {
+        groupId = $(this).attr("data-id");
+        e.preventDefault();
+        showContent(this.id, groupId)
+      });
+
+    });
+
   </script>
+  <script src="faye-browser.js"></script>
+  <script src="scripts.js"></script>
 </html>

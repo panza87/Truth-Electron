@@ -1,0 +1,135 @@
+<h2>Messages</h2>
+<div id="messageList"></div>
+<form id="messageInput">
+  <div class="input-field">
+    <input id="messageText" type="text">
+    <label for="messageText">Write your message...</label>
+  </div>
+  <button class="btn waves-effect waves-light" id="send" type="submit" name="action">Submit
+    <i class="material-icons right">send</i>
+  </button>
+</form>
+
+<script>
+  var displayMessages = function(data) {
+    for (var i = 0; i < data.length; i++) {
+      if (parseInt(data[i].group_id) === parseInt(truthApp.group_id)) {
+        if (parseInt(data[i].user_id) === parseInt(sessionStorage.getItem("user_id"))) {
+          console.log(parseInt(data[i].id), parseInt(sessionStorage.getItem("user_id")))
+          console.log("things")
+          console.log(data[i])
+          $newLi = $("<li class='yours'>")
+          $newLi.append('<img class="thumb" src="' + data[i].image + '"/>');
+          $newLi.append('<div class="content">' + data[i].user.name + '<div id="messageContent" class="round lighten-3">' + data[i].content + '</div></div>')
+          $("#messageList").append($newLi)
+        } else {
+          $newLi = $("<li class='others'>")
+          $newLi.append('<img class="thumb" src="' + data[i].image + '"/>');
+          $newLi.append('<div class="content">' + data[i].user.name + '<div id="messageContent" class="round lighten-3">' + data[i].content + '</div></div>')
+          $("#messageList").append($newLi)
+        }
+      }
+    }
+    var newHeight = $('#main')[0].scrollHeight;
+    $('#main').animate({scrollTop: newHeight}, 'slow');
+  }
+
+  var posted = function(data) {
+    data = {
+      content: truthApp.message_text,
+      group_id: truthApp.group_id,
+      user_id: sessionStorage.getItem("user_id"),
+      image: truthApp.image,
+      name: sessionStorage.getItem("user_name")
+    }
+    console.log(truthApp.image)
+    var publication = client.publish('/messages/new', {data:data});
+
+    publication.then(function() {
+      console.log('Message received by server!');
+    }, function(error) {
+      console.log('There was a problem: ' + error.message);
+    });
+  }
+
+  truthApp.jwt = "Bearer " + sessionStorage.getItem("jwt");
+
+  $.ajax({
+    url: "https://glacial-depths-39385.herokuapp.com/messages.json",
+    dataType: "JSON",
+    type: "GET",
+    headers: {
+        'Authorization': truthApp.jwt
+    }
+  }).fail(function( xhr, status, errorThrown ) {
+    console.log( "Sorry, there was a problem!" );
+    console.log( "Error: " + errorThrown );
+    console.log( "Status: " + status );
+    console.dir( xhr );
+  }).done(displayMessages);
+
+  $(document).ready(function () {
+    $("#send").on("click", function(e) {
+      e.preventDefault();
+      truthApp.message_text = $("#messageText").val();
+      $newLi = $("<li class='yours'>")
+      truthApp.image = take_snapshot();
+      data = {
+        content: truthApp.message_text,
+        group_id: truthApp.group_id,
+        user_id: sessionStorage.getItem("user_id"),
+        image: truthApp.image
+      }
+      $newLi.append('<img class="thumb" src="' + truthApp.image + '"/>');
+      $newLi.append('<div class="content">' + sessionStorage.getItem("user_name") + '<div id="messageContent" class="round lighten-3">' + truthApp.message_text + '</div></div>')
+      $("#messageList").append($newLi)
+      var newHeight = $('#main')[0].scrollHeight;
+      $('#main').animate({scrollTop: newHeight}, 'slow');
+      $("#messageText").val("");
+      $.ajax({
+        url: "https://glacial-depths-39385.herokuapp.com/messages",
+        type: "POST",
+        headers: {
+            'Authorization': truthApp.jwt
+        },
+        data: {
+          message: {
+            content: truthApp.message_text,
+            group_id: truthApp.group_id,
+            user_id: truthApp.user_id,
+            image: truthApp.image,
+            name: sessionStorage.getItem("user_name")
+          }
+        }
+      }).done(posted).fail(function( xhr, status, errorThrown ) {
+        console.log( "Sorry, there was a problem!" );
+        console.log( "Error: " + errorThrown );
+        console.log( "Status: " + status );
+        console.dir( xhr );
+      });
+    })
+  });
+</script>
+<div id="my_camera" style="width:320px; height:240px;"></div>
+<div id="my_result"></div>
+<!-- <script src="../webcam.js"></script> -->
+<script>
+  var Webcam = require('./webcam.js');
+  Webcam.set({
+    dest_width: 133,
+    dest_height: 100,
+  });
+
+  Webcam.attach( '#my_camera' )
+  $('#my_camera').css("display", "none")
+
+  function take_snapshot() {
+    var image = ""
+    Webcam.snap( function(data_uri) {
+      // console.log(data_uri);
+      // $("#my_result").html('<img src="'+data_uri+'"/>');
+      image = data_uri;
+    } );
+    return image
+  }
+</script>
